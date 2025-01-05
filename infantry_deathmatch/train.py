@@ -37,12 +37,12 @@ class SingleAgentEnv(gym.Env):
         return output_obs, reward[0], done, info
     
 class SwitchAgentEnv(gym.Env):
-    def __init__(self, policy):
+    def __init__(self, model_pth, policy):
         super().__init__()
         self.original_env = InfantryDeathmatch(policy, do_render=False)
 
         # Load the pre-trained model for the second agent
-        self.model = PPO.load("ppo_robot_game_env", device='cpu')
+        self.model = PPO.load(model_pth, device='cpu')
         
         # Flatten the action space
         self.action_space = spaces.Box(
@@ -103,13 +103,14 @@ policy = {
 # Step Single Agent
 env = SingleAgentEnv(policy)
 model = PPO("MlpPolicy", env, verbose=1, device='cpu')
-model.learn(total_timesteps=10000, callback=CustomCallback(check_freq=1, policy=policy))
+model.learn(total_timesteps=100, callback=CustomCallback(check_freq=10, policy=policy))
 model.save("ppo_robot_game_env")
 print("--- %s seconds ---" % (time.time() - start_time))
 
-# # Step Switch Agent
-# env = SwitchAgentEnv("ppo_robot_game_env", policy)
-# model = PPO.load("ppo_robot_game_env", env=env, verbose=0, device='cpu')
-# model.learn(total_timesteps=1000000, callback=CustomCallback(check_freq=2000, policy=policy))
-# model.save("ppo_robot_game_env")
-# print("--- %s seconds ---" % (time.time() - start_time))
+# Step Switch Agent
+env = SwitchAgentEnv("ppo_robot_game_env", policy)
+model = PPO.load("ppo_robot_game_env", env=env, verbose=1, device='cpu')
+# model = PPO("MlpPolicy", env, verbose=1, device='cpu')
+model.learn(total_timesteps=1000000, callback=CustomCallback(check_freq=10, policy=policy))
+model.save("ppo_robot_game_env")
+print("--- %s seconds ---" % (time.time() - start_time))
