@@ -8,6 +8,8 @@ from InfantryDeathmatch import InfantryDeathmatch
 from utils import rotate_action, rotate_obs
 from aim_edge_agent import decide
 
+model = None
+
 class SingleAgentEnv(gym.Env):
     def __init__(self, policy):
         super().__init__()
@@ -38,7 +40,7 @@ class SingleAgentEnv(gym.Env):
         return output_obs, reward[0], done, info
     
 class AimEdgeAgentEnv(gym.Env):
-    def __init__(self, model_pth, policy):
+    def __init__(self, policy):
         super().__init__()
         self.original_env = InfantryDeathmatch(policy, do_render=False)
         
@@ -110,16 +112,21 @@ class SwitchAgentEnv(gym.Env):
         return output_obs, reward[0], done, info
 
 class CustomCallback(BaseCallback):
-    def __init__(self, check_freq, policy, verbose=1):
+    def __init__(self, check_freq, policy, sync_save=False, verbose=1):
         super(CustomCallback, self).__init__(verbose)
         self.check_freq = check_freq
         self.policy = policy
+        self.sync_save = sync_save
 
     def _on_step(self) -> bool:
+        global model
+
         training_env = self.training_env.envs[0].env.gym_env
         training_env.original_env.policy = self.policy
 
         if self.n_calls % self.check_freq == 0:
+            if self.sync_save:
+                model.save("ppo_robot_game_env")
             print(f"Step: {self.n_calls}, Time elapsed: {time.time() - start_time:.2f} seconds")
         return True
 
@@ -137,17 +144,25 @@ policy = {
 
 # Step Single Agent
 env = SingleAgentEnv(policy)
-# model = PPO("MlpPolicy", env, verbose=1, device='cpu')
-model = A2C("MlpPolicy", env, verbose=1, device='cpu')
-model.learn(total_timesteps=100, callback=CustomCallback(check_freq=1, policy=policy))
+model = PPO("MlpPolicy", env, verbose=1, device='cpu')
+# model = A2C("MlpPolicy", env, verbose=1, device='cpu')
+model.learn(total_timesteps=4000, callback=CustomCallback(check_freq=10, policy=policy))
 # model.learn(total_timesteps=100)
-model.save("a2c_robot_game_env")
+model.save("ppo_robot_game_env")
 print("--- %s seconds ---" % (time.time() - start_time))
 
-# # Step Switch Agent
-# env = SwitchAgentEnv("ppo_robot_game_env", policy)
-# model = PPO.load("ppo_robot_game_env", env=env, verbose=1, device='cpu')
-# # model = PPO("MlpPolicy", env, verbose=1, device='cpu')
-# model.learn(total_timesteps=100, callback=CustomCallback(check_freq=10, policy=policy))
-# model.save("ppo_robot_game_env")
-# print("--- %s seconds ---" % (time.time() - start_time))
+# Step Aim Edge Agent
+env = AimEdgeAgentEnv(policy)
+model = PPO.load("ppo_robot_game_env", env=env, verbose=1, device='cpu')
+# model = PPO("MlpPolicy", env, verbose=1, device='cpu')
+model.learn(total_timesteps=100000, callback=CustomCallback(check_freq=10, policy=policy))
+model.save("ppo_robot_game_env")
+print("--- %s seconds ---" % (time.time() - start_time))
+
+# Step Switch Agent
+env = SwitchAgentEnv("ppo_robot_game_env", policy)
+model = PPO.load("ppo_robot_game_env", env=env, verbose=1, device='cpu')
+# model = PPO("MlpPolicy", env, verbose=1, device='cpu')
+model.learn(total_timesteps=1000000, callback=CustomCallback(check_freq=10, policy=policy, sync_save=True))
+model.save("ppo_robot_game_env")
+print("--- %s seconds ---" % (time.time() - start_time))
