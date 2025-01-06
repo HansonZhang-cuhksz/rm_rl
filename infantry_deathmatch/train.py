@@ -112,17 +112,24 @@ class SwitchAgentEnv(gym.Env):
         return output_obs, reward[0], done, info
 
 class CustomCallback(BaseCallback):
-    def __init__(self, check_freq, policy, sync_save=False, verbose=1):
+    def __init__(self, check_freq, policy, sync_save=False, verbose=1, expect_episodes=None):
         super(CustomCallback, self).__init__(verbose)
         self.check_freq = check_freq
         self.policy = policy
         self.sync_save = sync_save
+        self.expect_episodes = expect_episodes
+        self.episode_count = 0
 
     def _on_step(self) -> bool:
         global model
 
         training_env = self.training_env.envs[0].env.gym_env
         training_env.original_env.policy = self.policy
+
+        if self.locals['dones'][0]:
+            self.episode_count += 1
+            if self.expect_episodes is not None and self.episode_count >= self.expect_episodes:
+                return False
 
         if self.n_calls % self.check_freq == 0:
             if self.sync_save:
@@ -146,7 +153,7 @@ policy = {
 env = SingleAgentEnv(policy)
 model = PPO("MlpPolicy", env, verbose=1, device='cpu')
 # model = A2C("MlpPolicy", env, verbose=1, device='cpu')
-model.learn(total_timesteps=4000, callback=CustomCallback(check_freq=10, policy=policy))
+model.learn(total_timesteps=1000000, callback=CustomCallback(check_freq=10, policy=policy, expect_episodes=100))
 # model.learn(total_timesteps=100)
 model.save("ppo_robot_game_env")
 print("--- %s seconds ---" % (time.time() - start_time))
@@ -155,7 +162,7 @@ print("--- %s seconds ---" % (time.time() - start_time))
 env = AimEdgeAgentEnv(policy)
 model = PPO.load("ppo_robot_game_env", env=env, verbose=1, device='cpu')
 # model = PPO("MlpPolicy", env, verbose=1, device='cpu')
-model.learn(total_timesteps=100000, callback=CustomCallback(check_freq=10, policy=policy))
+model.learn(total_timesteps=100000000, callback=CustomCallback(check_freq=10, policy=policy, expect_episodes=1000))
 model.save("ppo_robot_game_env")
 print("--- %s seconds ---" % (time.time() - start_time))
 
@@ -163,6 +170,6 @@ print("--- %s seconds ---" % (time.time() - start_time))
 env = SwitchAgentEnv("ppo_robot_game_env", policy)
 model = PPO.load("ppo_robot_game_env", env=env, verbose=1, device='cpu')
 # model = PPO("MlpPolicy", env, verbose=1, device='cpu')
-model.learn(total_timesteps=1000000, callback=CustomCallback(check_freq=10, policy=policy, sync_save=True))
+model.learn(total_timesteps=10000000000, callback=CustomCallback(check_freq=10, policy=policy, sync_save=True, expect_episodes=100000))
 model.save("ppo_robot_game_env")
 print("--- %s seconds ---" % (time.time() - start_time))
