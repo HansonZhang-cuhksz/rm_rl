@@ -217,12 +217,11 @@ def identify_hidden_area(hidden_areas, pos):
     return None
 
 def rotate_obs(obs):
-    obs[0][0] = ARENA_SIZE - obs[0][0]
-    obs[0][1] = ARENA_SIZE - obs[0][1]
+    obs = list(obs)
+    obs[0] = (ARENA_SIZE - obs[0][0], ARENA_SIZE - obs[0][1])
     obs[2] = (obs[2] + np.pi) % (2 * np.pi)
     obs[3] = (obs[3] + np.pi) % (2 * np.pi)
-    obs[8][0] = ARENA_SIZE - obs[8][0]
-    obs[8][1] = ARENA_SIZE - obs[8][1]
+    obs[8] = (ARENA_SIZE - obs[8][0], ARENA_SIZE - obs[8][1])
     grid = obs[9]
     for i in range(RESOLUTION):
         for j in range(RESOLUTION):

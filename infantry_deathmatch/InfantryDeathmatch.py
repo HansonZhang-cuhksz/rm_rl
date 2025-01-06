@@ -70,8 +70,8 @@ class InfantryDeathmatch(gym.Env):
         # player2_obs = (self.player2_pos, 0, None, self.player2_aim, False, self.player2_hp, False, False, (None, None), predict_grid2)
         player1_obs = (self.player1_pos, 0, 0, self.player1_aim, False, self.player1_hp, False, False, (0, 0), predict_grid1)
         player2_obs = (self.player2_pos, 0, 0, self.player2_aim, False, self.player2_hp, False, False, (0, 0), predict_grid2)
-
-        return player1_obs, player2_obs
+        self.state = (player1_obs, player2_obs)
+        return self.state
 
     def step(self, action1, action2):
         reward1 = 0
@@ -84,7 +84,7 @@ class InfantryDeathmatch(gym.Env):
 
         # Check detection
         player1_hidden_area = get_hidden_pixels(pos_to_pixel(self.player1_pos))
-        detect = pos_to_pixel(self.player2_pos) in player1_hidden_area
+        detect = pos_to_pixel(self.player2_pos) not in player1_hidden_area
 
         # Orientation
         if detect:
@@ -129,7 +129,7 @@ class InfantryDeathmatch(gym.Env):
         if action1[0] >= 0.5:
             # Reward for moving
             reward1 += self.policy["move_reward"]
-            player1_new_pos = (self.player1_pos[0] + SPEED * np.cos(action1[1]), self.player1_pos[1] + SPEED * np.sin(action1[1]))
+            player1_new_pos = (self.player1_pos[0] + SPEED * np.cos(action1[1]), self.player1_pos[1] * TICK + SPEED * np.sin(action1[1]) * TICK)
             if is_valid_position(player1_new_pos):
                 self.player1_pos = player1_new_pos
             else:
@@ -140,7 +140,7 @@ class InfantryDeathmatch(gym.Env):
         if action2[0] >= 0.5:
             # Reward for moving
             reward2 += self.policy["move_reward"]
-            player2_new_pos = (self.player2_pos[0] + SPEED * np.cos(action2[1]), self.player2_pos[1] + SPEED * np.sin(action2[1]))
+            player2_new_pos = (self.player2_pos[0] + SPEED * np.cos(action2[1]), self.player2_pos[1] * TICK + SPEED * np.sin(action2[1]) * TICK)
             if is_valid_position(player2_new_pos):
                 self.player2_pos = player2_new_pos
             else:
@@ -155,7 +155,8 @@ class InfantryDeathmatch(gym.Env):
         predict_grid2 = pixels_to_grid(player2_predict_player1_pos)
         player1_obs = (self.player1_pos, action1[0], action1[1], self.player1_aim, player1_hit_wall, self.player1_hp, player1_get_hit, detect, self.player2_pos if detect else (0, 0), predict_grid1)
         player2_obs = (self.player2_pos, action2[0], action2[1], self.player2_aim, player2_hit_wall, self.player2_hp, player2_get_hit, detect, self.player1_pos if detect else (0, 0), predict_grid2)
-        return (player1_obs, player2_obs), (reward1, reward2), self.player1_hp <= 0 or self.player2_hp <= 0, {}
+        self.state = (player1_obs, player2_obs)
+        return self.state, (reward1, reward2), self.player1_hp <= 0 or self.player2_hp <= 0, {"detect": detect}
     
     def render(self):
         if self.do_render:
@@ -163,13 +164,21 @@ class InfantryDeathmatch(gym.Env):
             for x in range(RESOLUTION):
                 for y in range(RESOLUTION):
                     if barrier_grid[x, y]:
-                        pygame.draw.rect(self.screen, (255, 255, 255), (x, y, 10, 10))
+                        pygame.draw.rect(self.screen, (255, 255, 255), (x, y, 100, 100))
             pygame.draw.circle(self.screen, (0, 255, 0), (self.player1_pos[0] * 200, self.player1_pos[1] * 200), R*200)
             pygame.draw.circle(self.screen, (255, 0, 0), (self.player2_pos[0] * 200, self.player2_pos[1] * 200), R*200)
 
-            # Draw HP bars
-            self.draw_hp_bar((self.player1_pos[0] * 200, self.player1_pos[1] * 200 - 50), self.player1_hp, (0, 255, 0))
-            self.draw_hp_bar((self.player2_pos[0] * 200, self.player2_pos[1] * 200 - 50), self.player2_hp, (255, 0, 0))
+            for pixel in get_hidden_pixels(pos_to_pixel(self.player1_pos)):
+                pygame.draw.rect(self.screen, (100, 100, 100), (pixel[0] * 10, pixel[1] * 10, 10, 10))
+
+            # # Draw HP bars
+            # self.draw_hp_bar((self.player1_pos[0] * 200, self.player1_pos[1] * 200 - 50), self.player1_hp, (0, 255, 0))
+            # self.draw_hp_bar((self.player2_pos[0] * 200, self.player2_pos[1] * 200 - 50), self.player2_hp, (255, 0, 0))
+
+            for x in range(RESOLUTION):
+                for y in range(RESOLUTION):
+                    if barrier_grid[y][x]:
+                        pygame.draw.rect(self.screen, (0, 0, 0), (x * 10, y * 10, ARENA_SIZE, ARENA_SIZE))
 
             pygame.display.flip()
             self.clock.tick(60)

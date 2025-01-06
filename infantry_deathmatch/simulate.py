@@ -2,20 +2,21 @@ import gym
 import numpy as np
 from utils import *
 from InfantryDeathmatch import *
-from stable_baselines3 import PPO
+from stable_baselines3 import A2C
 import time
 
 policy = {
-    "shoot_reward": 10,
-    "hit_reward": 100,
-    "win_reward": 1000,
-    "death_penalty": 0
+    "aim_reward_bias": 1,
+    "aim_reward_weight": 10,
+    "shoot_reward": 100,
+    "move_reward": 1,
+    "hit_wall_penalty": 0
 }
 
 # Initialize the environment
-env = InfantryDeathmatch(policy, render=True)
+env = InfantryDeathmatch(policy, do_render=False)
 
-model = PPO.load("ppo_robot_game_env", device='cpu')
+model = A2C.load("a2c_robot_game_env", device='cpu')
 
 done = False
 env.reset()
@@ -41,8 +42,8 @@ while not done:
     # Render the game
     env.render()
 
-    time.sleep(0.05)
+    # time.sleep(0.05)
     counter += 1
-    print("Counter: ", counter, "Player1 HP: ", env.player1.hp, "Player2 HP: ", env.player2.hp)
+    print("Counter: ", counter, "Player1: ", env.player1_hp, "@", env.player1_pos, "Player2: ", env.player2_hp, "@", env.player2_pos, "Detect: ", info["detect"])
 
 env.close()
