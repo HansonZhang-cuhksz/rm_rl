@@ -65,8 +65,8 @@ class AimEdgeAgentEnv(gym.Env):
         
         raw_obs = self.original_env.state[1]  # Get the observation for the second agent
         rotated_obs = rotate_obs(raw_obs)
-        obs = np.concatenate([np.array(o).flatten() for o in rotated_obs])
-        raw_action2 = decide(obs)
+        # obs = np.concatenate([np.array(o).flatten() for o in rotated_obs])
+        raw_action2 = decide(rotated_obs)
         action2 = rotate_action(raw_action2)
 
         obs, reward, done, info = self.original_env.step(action1, action2)
@@ -149,14 +149,14 @@ policy = {
     "hit_wall_penalty": 0
 }
 
-# Step Single Agent
-env = SingleAgentEnv(policy)
-model = PPO("MlpPolicy", env, verbose=1, device='cpu')
-# model = A2C("MlpPolicy", env, verbose=1, device='cpu')
-model.learn(total_timesteps=1000000, callback=CustomCallback(check_freq=10, policy=policy, expect_episodes=100))
-# model.learn(total_timesteps=100)
-model.save("ppo_robot_game_env")
-print("--- %s seconds ---" % (time.time() - start_time))
+# # Step Single Agent
+# env = SingleAgentEnv(policy)
+# model = PPO("MlpPolicy", env, verbose=1, device='cpu')
+# # model = A2C("MlpPolicy", env, verbose=1, device='cpu')
+# model.learn(total_timesteps=1000000, callback=CustomCallback(check_freq=10, policy=policy, expect_episodes=100))
+# # model.learn(total_timesteps=100)
+# model.save("ppo_robot_game_env")
+# print("--- %s seconds ---" % (time.time() - start_time))
 
 # Step Aim Edge Agent
 env = AimEdgeAgentEnv(policy)

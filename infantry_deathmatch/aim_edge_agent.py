@@ -31,27 +31,32 @@ def possible_area_range(direction):
         angle = np.arctan2(pixel[1] - pos[1], pixel[0] - pos[0])
         angles.append(angle)
     
-    def find_min_angle(src, points):
-        x0, y0 = src
-        angles = []
+    def calculate_angle(x0, y0, x, y):
+        return np.arctan2(y - y0, x - x0) % (2 * np.pi)
 
-        # Calculate angles of all points relative to the source point
-        for (x, y) in points:
-            angle = np.arctan2(y - y0, x - x0)
-            angles.append(angle)
+    def find_minimum_covering_angle(pos, points):
+        x0 = pos[0]
+        y0 = pos[1]
 
-        # Sort the angles
+        angles = [calculate_angle(x0, y0, x, y) for x, y in points]
         angles.sort()
 
-        # Find the minimum angle that covers all points
         min_angle = 2 * np.pi
-        for i in range(len(angles)):
-            angle_diff = (angles[(i + 1) % len(angles)] - angles[i]) % (2 * np.pi)
-            min_angle = min(min_angle, angle_diff)
+        start_angle = 0
+        end_angle = 0
 
-        return min_angle
+        for i in range(len(angles)):
+            current_angle = angles[i]
+            next_angle = angles[(i + 1) % len(angles)]
+            diff = (next_angle - current_angle) % (2 * np.pi)
+            if diff < min_angle:
+                min_angle = diff
+                start_angle = current_angle
+                end_angle = next_angle
+
+        return min_angle, start_angle, end_angle
     
-    min_angle, start_angle, end_angle = find_min_angle(pos, next_opponent_area)
+    min_angle, start_angle, end_angle = find_minimum_covering_angle(pos, next_opponent_area)
     aim_range = (start_angle, end_angle)
     return min_angle
 
@@ -66,6 +71,7 @@ def dodge(pos):
 def decide(obs):
     global pos, opponent_area_pixels, aim_range
 
+    # print("obs", obs)
     pos = obs[0]
     detect = obs[7]
 
@@ -73,7 +79,8 @@ def decide(obs):
         move = dodge(pos)
         aim_direction = 0
     else:
-        opponent_area_pixels = obs[9]
+        opponent_area_grid = obs[9]
+        opponent_area_pixels = grid_to_pixels(opponent_area_grid)
         initial = np.pi
         res = minimize(possible_area_range, initial, method='Nelder-Mead')
         possible_area_range(res.x)
