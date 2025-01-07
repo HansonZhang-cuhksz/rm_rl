@@ -4,9 +4,9 @@ import torch.nn as nn
 import torch.optim as optim
 from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import DataLoader, TensorDataset
-import rclpy
-from rclpy.node import Node
-from std_msgs.msg import Float32MultiArray
+# import rclpy
+# from rclpy.node import Node
+# from std_msgs.msg import Float32MultiArray
 
 # 创建训练数据和标签
 def create_dataset(data, time_step=1):
@@ -56,34 +56,35 @@ def online_learning(model, optimizer, loss_function, new_data, time_step, scaler
 
     return model
 
-class DataListener(Node):
-    def __init__(self):
-        super().__init__('data_listener')
-        self.subscription = self.create_subscription(
-            Float32MultiArray,
-            'robot_position_topic',
-            self.listener_callback,
-            10)
-        self.data = []
-        self.data_count = 0
-        self.max_data_count = 1000000  # 设置接收数据的最大数量
+# class DataListener(Node):
+#     def __init__(self):
+#         super().__init__('data_listener')
+#         self.subscription = self.create_subscription(
+#             Float32MultiArray,
+#             'robot_position_topic',
+#             self.listener_callback,
+#             10)
+#         self.data = []
+#         self.data_count = 0
+#         self.max_data_count = 1000000  # 设置接收数据的最大数量
 
-    def listener_callback(self, msg):
-        self.data.append(msg.data)
-        self.data_count += 1
-        # self.get_logger().info(f'Received: {msg.data}')
-        if self.data_count >= self.max_data_count:
-            self.get_logger().info('Max data count reached, shutting down...')
-            rclpy.shutdown()
+#     def listener_callback(self, msg):
+#         self.data.append(msg.data)
+#         self.data_count += 1
+#         # self.get_logger().info(f'Received: {msg.data}')
+#         if self.data_count >= self.max_data_count:
+#             self.get_logger().info('Max data count reached, shutting down...')
+#             rclpy.shutdown()
 
 def main(args=None):
-    rclpy.init(args=args)
-    data_listener = DataListener()
-    rclpy.spin(data_listener)
+    # rclpy.init(args=args)
+    # data_listener = DataListener()
+    # rclpy.spin(data_listener)
 
-    data = np.array(data_listener.data)
-    np.save('data.npy', data)
-    print("Saved")
+    # data = np.array(data_listener.data)
+    # np.save('data.npy', data)
+    # print("Saved")
+    data = np.load("data.npy")
     scaler = MinMaxScaler(feature_range=(0, 1))
     data_scaled = scaler.fit_transform(data)
 
@@ -131,8 +132,8 @@ def main(args=None):
 
     print("Predicted Position:", predicted_position)
 
-    data_listener.destroy_node()
-    rclpy.shutdown()
+    # data_listener.destroy_node()
+    # rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

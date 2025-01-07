@@ -24,6 +24,7 @@ def vel_func(x):
 
 def pos_func(x):
     out = 0
+    x %= 6
     for i in range(int(x*1000)):
         out += vel_func(i/1000) / 1000
     return out
@@ -57,12 +58,16 @@ if __name__ == '__main__':
     # rclpy.spin(talker)
     # talker.destroy_node()
     # rclpy.shutdown()
+    print("start")
     data = np.array([])
     for i in range(1000000):
-        position = pos_func(i)
-        velocity = vel_func(i)
+        i_copy = 0 + i
+        position = pos_func(i_copy)
+        velocity = vel_func(i_copy)
         msg = [position, 0, 0, velocity, 0, 0]
-        for i in range(6):
-            msg[i] += rd.normalvariate(0, 0.1)
+        for j in range(6):
+            msg[j] += rd.normalvariate(0, 0.1)
         data = np.append(data, msg)
+        if i%10000 == 0:
+            print(i, "done")
     np.save('data.npy', data)
