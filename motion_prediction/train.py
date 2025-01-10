@@ -47,9 +47,9 @@ data = np.loadtxt('robot_motion_data.csv', delimiter=',', skiprows=1)
 data = torch.tensor(data, dtype=torch.float32)
 print("Data Loaded")
 
-seq_length = 2
+seq_length = 100
 dataset = MotionDataset(data, seq_length)
-train_loader = DataLoader(dataset, batch_size=32, shuffle=True)
+train_loader = DataLoader(dataset, batch_size=1024, shuffle=True)
 
 # Example usage
 # Example usage
