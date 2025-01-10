@@ -6,9 +6,9 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 
 input_size = 8  # (x, y, z, yaw, vx, vy, vz, v_yaw)
-hidden_size = 64
+hidden_size = 128
 output_size = 4  # (x, y, z, yaw)
-num_layers = 2
+num_layers = 3
 
 model = MotionPredictionModel(input_size, hidden_size, output_size, num_layers)
 
