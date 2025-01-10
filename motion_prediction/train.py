@@ -29,14 +29,6 @@ def train_model(model, train_loader, criterion, optimizer, num_epochs):
 
     torch.save(model, 'model.pth')
 
-# Example usage
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model.to(device)
-
-criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-num_epochs = 50
-
 class MotionDataset(Dataset):
     def __init__(self, data, seq_length):
         self.data = data
@@ -48,7 +40,7 @@ class MotionDataset(Dataset):
     def __getitem__(self, idx):
         past_states = self.data[idx:idx+self.seq_length, :8]
         future_states = self.data[idx+self.seq_length, :4]
-        return torch.tensor(past_states, dtype=torch.float32), torch.tensor(future_states, dtype=torch.float32)
+        return past_states.clone().detach(), future_states.clone().detach()
 
 # Load data from CSV file
 data = np.loadtxt('robot_motion_data.csv', delimiter=',', skiprows=1)
@@ -56,9 +48,16 @@ data = torch.tensor(data, dtype=torch.float32)
 print("Data Loaded")
 
 seq_length = 2
-
 dataset = MotionDataset(data, seq_length)
-train_loader = DataLoader(dataset, batch_size=2, shuffle=True)
+train_loader = DataLoader(dataset, batch_size=32, shuffle=True)
 
 # Example usage
+# Example usage
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model.to(device)
+
+criterion = nn.MSELoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+num_epochs = 50
+
 train_model(model, train_loader, criterion, optimizer, num_epochs)
